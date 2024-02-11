@@ -35,7 +35,8 @@
   ],
   "node-red": {
     "nodes": {
-      "smxstate": "dist/smxstate-node.js"
+      "smxstate": "dist/smxstate-node.js",
+      "smxvis": "dist/dashboard-node.js"
     },
     "version": ">=1.2.0"
   },

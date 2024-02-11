@@ -20,9 +20,9 @@ const cfg = {
 	tmp: path.join(__dirname, 'tmp'),
 
 	testHtml: path.join(__dirname, 'tests/smxstate-help-viewer.html'),
-	nodeHtml: path.join(__dirname, 'src/smxstate-node.html'),
+	nodeHtml: [path.join(__dirname, 'src/*-node.html')],
 	jsescape: path.join(__dirname, 'src/defaultStateMachine.js'),
-	copyFiles: [path.join(__dirname, 'src/smxstate-node.js')],
+	copyFiles: [path.join(__dirname, 'src/*-node.js')],
 
 	production: !!argv.production
 };
