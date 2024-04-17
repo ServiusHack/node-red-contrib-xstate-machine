@@ -313,13 +313,67 @@ result = (async function(__send__,__done__){
 
 			let s = makeStateObject(state);
 
+			let machineId = context.xstate.blueprint.get('id');
 			node.send([null, null, {
 				topic: "transition",
 				payload: {
 					state: s,
-					machineId: context.xstate.blueprint.get('id')
+					machineId: machineId
 				}
 			}]);
+
+			node.send([null, null, null, {
+				payload: {
+			   "command": "set_style",
+						"selector": 'svg g.graph g:not([class="edge"]) *[stroke][stroke!="transparent"][stroke!="none"]',
+			   // "selector": 'g.graph g:not([class="edge"]) *[stroke]:not([stroke="transparent"]):not([stroke="none"])',
+			   "attributeName": "stroke",
+			   "attributeValue": "var(--nr-dashboard-widgetTextColor)"
+			   // "attributeValue": "#FFFF00"
+				}
+			}]);
+
+      // Recurse into state
+      function getStatepaths(state, parentState) {
+          if( typeof state === "string" ) return [(parentState ? parentState + "." + state : state)];
+
+          if( !state ) return parentState;
+
+          let substates = Object.keys(state);
+
+          let statePaths = [];
+          for( let substate of substates ) {
+              let substatePath = parentState ? parentState + "." + substate : substate;
+              if( state[substate] ) statePaths.push(substatePath);
+              statePaths = statePaths.concat(getStatepaths(state[substate], substatePath));
+          }
+          //console.log(statePaths)
+          return statePaths;
+      }
+
+      let activeStates = getStatepaths(s.state);
+
+      // Style active states
+      for( let activeState of activeStates ) {
+          // elements
+          //     .has('title:contains(' + msg.transition.machineId + '.' + activeState + '/)')
+          //     .has('title:not(:contains(/initial))')
+          //     .children('*[stroke][stroke!="transparent"][stroke!="none"]')
+          //     .attr('stroke','#FF0000');
+
+				var title = machineId + '.' + activeState;
+				var selector = 'g.graph g:not([class="edge"]):has(title:contains('+title+'/)):has(title:not(:contains(/initial))) *[stroke][stroke!="transparent"][stroke!="none"]';
+				// var selector = 'svg g.graph g:not([class="edge"]):has(title:contains('+title+'/)):has(title:not(:contains(/initial))) *[stroke]:not([stroke="transparent"]):not([stroke="none"])';
+				node.send([null, null, null, {
+					payload: {
+				   "command": "set_style",
+						"selector": selector,
+				   // "selector": 'g.graph g:not([class="edge"]) *[stroke]not([stroke="transparent"]):not([stroke="none"])',
+				   "attributeName": "stroke",
+				   "attributeValue": "#FF0000"
+					}
+				}]);
+      }
 			
 			// Publish to editor
 			// Runtime only sends data if there are client connections/subscriptions
@@ -440,6 +494,13 @@ result = (async function(__send__,__done__){
 					payload: smcat_svg
 				}]);
 
+				node.send([null, null, null, {
+					payload: {
+						command: "replace_svg",
+						svg: smcat_svg.replaceAll("&nbsp;", "\u00A0")
+					}
+				}]);
+
 				// Send update for context/state
 				let context = node.context().xstate;
 
@@ -450,6 +511,16 @@ result = (async function(__send__,__done__){
 					payload: {
 						state: state,
 						machineId: context.blueprint.get('id')
+					}
+				}]);
+
+				node.send([null, null, null, {
+					payload: {
+				   "command": "set_style",
+						"selector": 'svg g.graph g:not([class="edge"]) *[stroke][stroke!="transparent"][stroke!="none"]',
+				   // "selector": 'g.graph g:not([class="edge"]) *[stroke]:not([stroke="transparent"]):not([stroke="none"])',
+				   "attributeName": "stroke",
+				   "attributeValue": "var(--nr-dashboard-widgetTextColor)"
 					}
 				}]);
 
@@ -569,6 +640,8 @@ result = (async function(__send__,__done__){
 				if( msg.hasOwnProperty("topic") && typeof msg.topic === "string" ) {
 					if( msg.topic === "reset" ) {
 						restartMachine( node );
+					// } else if (msg.topic === "") {
+					// 	nodeContext.xstate.service.send(msg.payload);
 					} else {
 						nodeContext.xstate.service.send(msg.topic, { payload: msg.payload });
 					}

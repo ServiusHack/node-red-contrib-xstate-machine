@@ -77,13 +77,13 @@
 			noerr: { value:0, required:true, validate:(v) => !v }
 		},
 		inputs:1,
-		outputs:3,
+		outputs:4,
 		icon: "font-awesome/fa-dot-circle-o",
 		label: function() {
 			return this.name || "smxstate";
 		},
 		inputLabels: "trigger",
-		outputLabels: ["stateChanged", "msgOutput", "graph" ],
+		outputLabels: ["stateChanged", "msgOutput", "graph", "svg" ],
 		oneditprepare: function() {
 
 			var that = this;
