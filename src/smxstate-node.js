@@ -640,8 +640,10 @@ result = (async function(__send__,__done__){
 				if( msg.hasOwnProperty("topic") && typeof msg.topic === "string" ) {
 					if( msg.topic === "reset" ) {
 						restartMachine( node );
-					// } else if (msg.topic === "") {
-					// 	nodeContext.xstate.service.send(msg.payload);
+					} else if (msg.topic === "update-context") {
+						var context = nodeContext.xstate.service.getSnapshot().context;
+						nodeContext.xstate.service.getSnapshot().context = Object.assign(context, msg.payload);
+						nodeContext.xstate.service.update(nodeContext.xstate.service.state);
 					} else {
 						nodeContext.xstate.service.send(msg.topic, { payload: msg.payload });
 					}
