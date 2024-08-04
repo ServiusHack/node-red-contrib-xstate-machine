@@ -262,7 +262,7 @@ result = (async function(__send__,__done__){
 		}
 	}
 
-	function restartMachine(node) {
+	function restartMachine(node, execute) {
 
 		if( !node ) return;
 
@@ -282,7 +282,8 @@ result = (async function(__send__,__done__){
 				context.xstate.machineConfig ? context.xstate.machineConfig : undefined);
 	
 			service = xstate.interpret(machine, {
-				clock: context.xstate.clock
+				clock: context.xstate.clock,
+				execute: execute ?? true
 			});
 		} catch(err) {
 			setErrorStatus(node);
@@ -418,6 +419,11 @@ result = (async function(__send__,__done__){
 			setErrorStatus(node);
 			node.error(err);
 		}
+	}
+
+	function stopMachine(node) {
+		node.context().xstate.service.stop();
+		node.status({ fill: 'grey', shape: 'dot', text: 'stopped' });
 	}
 
 	function getNodeParentPath(node) {
@@ -641,9 +647,10 @@ result = (async function(__send__,__done__){
 					clock: getXStateClock(node)
 				};
 	
-				restartMachine(node);
+				restartMachine(node, false);
 
 				renderGraph(node, true, () => {}, () => {});
+				nodeContext.xstate.service.stop();
 			}).catch((err) => {
 				this.error(err);
 			});
@@ -656,7 +663,13 @@ result = (async function(__send__,__done__){
 			let hasDone = ( done ? typeof done === "function" : false );
 			try {
 				if( msg.hasOwnProperty("topic") && typeof msg.topic === "string" ) {
-					if( msg.topic === "reset" ) {
+					if( msg.topic === "sm-start" ) {
+						restartMachine(node);
+					}
+					else if( msg.topic === "sm-stop" ) {
+						stopMachine(node)
+					}
+					else if( msg.topic === "reset" ) {
 						restartMachine( node );
 					} else if (msg.topic === "update-context") {
 						var context = nodeContext.xstate.service.getSnapshot().context;
