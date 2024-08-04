@@ -214,6 +214,24 @@ result = (async function(__send__,__done__){
 `
 	}
 
+	// Recurse into state
+	function getStatepaths(state, parentState) {
+		if( typeof state === "string" ) return [(parentState ? parentState + "." + state : state)];
+
+		if( !state ) return parentState;
+
+		let substates = Object.keys(state);
+
+		let statePaths = [];
+		for( let substate of substates ) {
+			let substatePath = parentState ? parentState + "." + substate : substate;
+			if( state[substate] ) statePaths.push(substatePath);
+			statePaths = statePaths.concat(getStatepaths(state[substate], substatePath));
+		}
+		//console.log(statePaths)
+		return statePaths;
+	}
+
 	function getXStateClock(node) {
 		return {
 			setTimeout: (fn, timeout) => {
@@ -333,23 +351,6 @@ result = (async function(__send__,__done__){
 				}
 			}]);
 
-      // Recurse into state
-      function getStatepaths(state, parentState) {
-          if( typeof state === "string" ) return [(parentState ? parentState + "." + state : state)];
-
-          if( !state ) return parentState;
-
-          let substates = Object.keys(state);
-
-          let statePaths = [];
-          for( let substate of substates ) {
-              let substatePath = parentState ? parentState + "." + substate : substate;
-              if( state[substate] ) statePaths.push(substatePath);
-              statePaths = statePaths.concat(getStatepaths(state[substate], substatePath));
-          }
-          //console.log(statePaths)
-          return statePaths;
-      }
 
       let activeStates = getStatepaths(s.state);
 
@@ -505,12 +506,13 @@ result = (async function(__send__,__done__){
 				let context = node.context().xstate;
 
 				let state = makeStateObject(context.service.state);
+				let machineId = context.blueprint.get('id');
 
 				node.send([null, null, {
 					topic: "transition",
 					payload: {
 						state: state,
-						machineId: context.blueprint.get('id')
+						machineId: machineId
 					}
 				}]);
 
@@ -524,13 +526,29 @@ result = (async function(__send__,__done__){
 					}
 				}]);
 
+				let activeStates = getStatepaths(state.state);
+
+				// Style active states
+				for( let activeState of activeStates ) {
+					var title = machineId + '.' + activeState;
+					var selector = 'g.graph g:not([class="edge"]):has(title:contains('+title+'/)):has(title:not(:contains(/initial))) *[stroke][stroke!="transparent"][stroke!="none"]';
+					node.send([null, null, null, {
+						payload: {
+							"command": "set_style",
+							"selector": selector,
+							"attributeName": "stroke",
+							"attributeValue": "#FF0000"
+						}
+					}]);
+				}
+
 				await util.promisify(setTimeout)(100);
 
 				RED.comms.publish("smxstate_transition",{
 					type: 'transition',
 					id: node.id,
 					state: state,
-					machineId: context.blueprint.get('id')
+					machineId: machineId
 				});
 
 				await util.promisify(setTimeout)(100);
@@ -539,7 +557,7 @@ result = (async function(__send__,__done__){
 					type: 'context',
 					id: node.id,
 					context: context.service.state.context,
-					machineId: context.blueprint.get('id')
+					machineId: machineId
 				});
 			} catch(err) {
 					// Rendering was rejected
