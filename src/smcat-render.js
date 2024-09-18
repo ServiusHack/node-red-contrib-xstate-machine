@@ -2,6 +2,8 @@ const { spawn }     = require('child_process');
 const path          = require('path');
 const { JSDOM }     = require("jsdom");
 const commandExists = require('command-exists-promise');
+const asyncLimit    = require('@ycm.jason/async-limit')
+const os            = require('os');
 
 const cache         = require('../src/smcat-render-cache');
 
@@ -217,6 +219,8 @@ async function renderSMCatFcn(smcatStr, options) {
     return await promise;
 }
 
+const limitedRenderSMCatFcn = asyncLimit(renderSMCatFcn, os.cpus().length);
+
 async function renderFcn(smcatStr, timeoutMs, logOutput, callback) {
 
     if( !smcatStr ) return null;
@@ -225,7 +229,7 @@ async function renderFcn(smcatStr, timeoutMs, logOutput, callback) {
 
     switch( options.renderer.toLowerCase() ) {
         case 'smcat':
-            return await renderSMCatFcn(smcatStr, options);
+            return await limitedRenderSMCatFcn(smcatStr, options);
         case 'dot':
             return await renderDotFcn(smcatStr, options);
         default:

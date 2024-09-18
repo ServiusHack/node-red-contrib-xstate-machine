@@ -41,6 +41,7 @@
     "version": ">=1.2.0"
   },
   "dependencies": {
+    "@ycm.jason/async-limit": "^0.1.2",
     "clone": "2.x",
     "command-exists-promise": "2.x",
     "immutable": "4.x",
