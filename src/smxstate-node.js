@@ -674,7 +674,12 @@ result = (async function(__send__,__done__){
 					} else if (msg.topic === "update-context") {
 						var context = nodeContext.xstate.service.getSnapshot().context;
 						nodeContext.xstate.service.getSnapshot().context = Object.assign(context, msg.payload);
-						nodeContext.xstate.service.update(nodeContext.xstate.service.state);
+						for (const contextListener of nodeContext.xstate.service.contextListeners) {
+							contextListener(
+								nodeContext.xstate.service.state.context,
+								nodeContext.xstate.service.state.history ? nodeContext.xstate.service.state.history.context : undefined
+							);
+						}
 					} else {
 						nodeContext.xstate.service.send(msg.topic, { payload: msg.payload });
 					}
