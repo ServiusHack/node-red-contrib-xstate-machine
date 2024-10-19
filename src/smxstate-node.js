@@ -673,7 +673,7 @@ result = (async function(__send__,__done__){
 						restartMachine( node );
 					} else if (msg.topic === "update-context") {
 						var context = nodeContext.xstate.service.getSnapshot().context;
-						nodeContext.xstate.service.getSnapshot().context = Object.assign(context, msg.payload);
+						nodeContext.xstate.service.getSnapshot().context = Object.assign({}, context, msg.payload);
 						for (const contextListener of nodeContext.xstate.service.contextListeners) {
 							contextListener(
 								nodeContext.xstate.service.state.context,
